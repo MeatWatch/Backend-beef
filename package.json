@@ -1,0 +1,16 @@
+{
+  "name": "backend-meatwatch",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend API for MeatWatch",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.1"
+  }
+}
