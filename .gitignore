@@ -3,4 +3,4 @@ node_modules
 images/users/*
 
 
-images/users/ .gitkeep
+!images/users/.gitkeep
