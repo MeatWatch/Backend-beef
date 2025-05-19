@@ -1,6 +1,6 @@
 node_modules
 .env
-images/user/*
+images/users/*
 
 
-images/user/ .gitkeep
+images/users/ .gitkeep
