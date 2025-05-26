@@ -1,46 +1,58 @@
-import db from "../config/db.js";
+import { addNewClassification, deleteClassification, getAllById } from "../models/classificationModel.js";
 
-export const getAllClassifications = async (req, res) => {
+export const getAllClassification = async (req, res) => {
+  const { user_id } = req.params;
+  
   try {
-    const [rows] = await db.query("SELECT * FROM classifications");
-    res.json(rows);
+    const [rows] = await getAllById(user_id);
+    res.json({
+      message: "GET all classfication success",
+      data: rows,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ 
+      message: "Server Error",
+      serverMessage: err
+    });
   }
 };
 
-export const createClassification = async (req, res) => {
+export const addClassification = async (req, res) => {
+  const { user_id } = req.params;
+  const  image_path = req.file.path;
+  const reminder_date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
   const {
-    user_id,
     meat_type,
-    image_path,
     result,
     confidence_score,
     reminder_active,
-    reminder_date,
     reminder_message,
   } = req.body;
 
   try {
-    const [resultDb] = await db.query(
-      `INSERT INTO classifications (
-        user_id, meat_type, image_path, result,
-        confidence_score, reminder_active, reminder_date, reminder_message
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        user_id,
-        meat_type,
-        image_path,
-        result,
-        confidence_score,
-        reminder_active || false,
-        reminder_date || null,
-        reminder_message || null,
-      ]
-    );
+    const values = [user_id, meat_type, image_path, result, confidence_score, reminder_active, reminder_date, reminder_message]
 
-    res.status(201).json({ id: resultDb.insertId });
+    await addNewClassification(values);
+    res.status(201);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500);
   }
 };
+
+export const deleteClassificationById = async (req, res) => {
+  const { user_id } = req.params;
+  const { id } = req.query;
+
+  try {
+    await deleteClassification(user_id, id);
+    res.json({
+      message: `DELETE classification with id_user ${id} success`,
+    })
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Server Error',
+      serverMessage: err,
+    });
+  }
+}

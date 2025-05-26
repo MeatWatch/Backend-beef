@@ -4,3 +4,4 @@ images/users/*
 
 
 !images/users/.gitkeep
+!images/classification/.gitkeep

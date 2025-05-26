@@ -1,10 +1,15 @@
-import db from '../config/db.js';
 import dbPool from '../config/db.js';
 
 export const getAll = () => {
     const query = `SELECT * FROM users`;
 
     return dbPool.execute(query);
+}
+
+export const getUserByEmailAndPassword = (values) => {
+    const query = `SELECT * FROM users WHERE email = ?`;
+
+    return dbPool.execute(query, values);
 }
 
 export const createUser = async(values) => {
@@ -38,6 +43,12 @@ export const updateUser = (body, profile_picture, id) => {
     const query = `UPDATE users set ${field.join(', ')} WHERE user_id=${id}`;
 
     return dbPool.execute(query, values);
+}
+
+export const deleteUser = async (id) => {
+    const query = `DELETE FROM users WHERE user_id = ${id}`;
+
+    return dbPool.execute(query);
 }
 
 

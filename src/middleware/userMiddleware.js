@@ -1,4 +1,6 @@
 import multer  from "multer";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -22,4 +24,27 @@ const filter = (req, file, cb) => {
 export const uploadProfilePicture = (multer({
     storage: storage,
     fileFilter: filter,
-}))
+}));
+
+
+export const authMiddleware = (req, res, next) => {
+    if (req.path === '/login' || req.path === '/register') return next();
+
+    const token = req.headers.authorization?.split('Bearer ')[1];
+
+    if (token === undefined) {
+        return res.status(401).json({
+            message: 'Unauthorized: Token not provided',
+        });
+    }
+
+    try {
+        const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = verifyToken;
+        next();
+    } catch (err) {
+        res.status(401).json({
+            message: 'Unauthorized: Invalid token',
+        });
+    }
+};

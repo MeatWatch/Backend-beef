@@ -1,8 +1,12 @@
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 import { 
   getAll,
   createUser,
   updateUser,
+  deleteUser,
+  getUserByEmailAndPassword,
  } from "../models/userModel.js"; 
 
 export const getAllUsers = async (req, res) => {
@@ -20,9 +24,17 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+
 export const createNewUser = async (req, res) => {
-  const { username, email, password, full_name } = req.body;
-  
+  const { username, email, password, full_name = username } = req.body;
+  console.log("📥 Request body:", req.body);
+
+  if (!username || !email || !password) {
+    return res.status(400).json({
+      message: "Bad Request: username, email, and password are required.",
+    });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const values = [username, email, hashedPassword, full_name];
@@ -30,12 +42,13 @@ export const createNewUser = async (req, res) => {
     await createUser(values);
 
     res.status(201).json({
-        message: 'CREATE new users success',
+      message: "CREATE new users success",
     });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
-      serverMessage: err,
+    console.error("❌ Error saat register:", err);
+    res.status(500).json({
+      message: "Server Error",
+      serverMessage: err.message,
     });
   }
 };
@@ -44,10 +57,10 @@ export const updateUserWithId = async (req, res) => {
   const { id } = req.params;
   const { body } = req;
   const profile_picture = req.file.path;
-
+  
   try { 
     await updateUser(body, profile_picture, id);
-
+    
     res.json({
       message: `UPDATE user with id_user ${id} success`,
       data: {
@@ -56,6 +69,91 @@ export const updateUserWithId = async (req, res) => {
         profile_picture: profile_picture,
       }
     })
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Server Error',
+      serverMessage: err,
+    });
+  }
+}
+
+export const deleteUserById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await deleteUser(id);
+    res.json({
+      message: `DELETE users with id_user: ${id} success`,
+    })
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Server Error',
+      serverMessage: err,
+    });
+  }
+}
+
+export const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const values = [email];
+    const [rows] = await getUserByEmailAndPassword(values);
+  
+    if (rows.length === 0) {
+      return res.status(401).json({
+        message: 'Invalid email',
+      });
+    }
+
+    const isValid = await bcrypt.compare(password, rows[0].password_hash);
+    if (!isValid) {
+      return res.status(401).json({
+        message: "Invalid password",
+      });
+    }  
+
+    const token = jwt.sign({
+      id: rows[0].id, 
+      email: rows[0].email
+    }, process.env.JWT_SECRET, {
+      expiresIn: '1h'
+    });
+  
+    res.status(200).json({
+      message: 'Login Successfully',
+      token: token,
+      user: {
+        username: rows[0].username,
+      }
+    });  
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Server Error',
+      serverMessage: err,
+    });
+  }
+}
+
+export const registerUser = async (req, res) => {
+  const { username, email, password, full_name } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const [cekUser] = await getUserByEmailAndPassword([email]);
+    if (cekUser.length > 0) {
+      return res.status(400).json({
+        message: 'email is registered',
+      });
+    }
+
+    const values = [username, email, hashedPassword, full_name];
+    await createUser(values);
+
+    res.status(201).json({
+        message: 'CREATE new users success',
+    });
   } catch (err) {
     res.status(500).json({ 
       message: 'Server Error',
