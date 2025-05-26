@@ -7,6 +7,7 @@ import {
   updateUser,
   deleteUser,
   getUserByEmailAndPassword,
+  getUserByEmailOrUsername,
 } from "../models/userModel.js";
 
 export const getAllUsers = async (req, res) => {
@@ -76,30 +77,41 @@ export const updateUserWithId = async (req, res) => {
   }
 };
 
+// fetch-api nya dengan login berhasil menggubah yg tadinya meminta email menjadi username dan email dengan mengubah identifier
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
+
+  console.log(`🔐 Login attempt with identifier:`, identifier);
 
   try {
-    const values = [email];
-    const [rows] = await getUserByEmailAndPassword(values);
+    // Ambil user dari DB
+    const user = await getUserByEmailOrUsername(identifier);
 
-    if (rows.length === 0) {
+    console.log("📥 DB response user:", user);
+
+    if (!user) {
+      console.warn("❌ User not found:", identifier);
       return res.status(401).json({
-        message: "Invalid email",
+        message: "Invalid username or email",
       });
     }
 
-    const isValid = await bcrypt.compare(password, rows[0].password_hash);
+    // Verifikasi password
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    console.log("🔐 Password match status:", isValid);
+
     if (!isValid) {
+      console.warn("❌ Invalid password for user:", identifier);
       return res.status(401).json({
         message: "Invalid password",
       });
     }
 
+    // Buat token
     const token = jwt.sign(
       {
-        id: rows[0].id,
-        email: rows[0].email,
+        id: user.user_id,
+        email: user.email,
       },
       process.env.JWT_SECRET,
       {
@@ -107,17 +119,25 @@ export const loginUser = async (req, res) => {
       }
     );
 
+    console.log("✅ JWT generated:", token);
+
     res.status(200).json({
       message: "Login Successfully",
       token: token,
       user: {
-        username: rows[0].username,
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name,
+        profile_picture: user.profile_picture,
       },
     });
   } catch (err) {
+    console.error("💥 Server error during login:", err);
+
     res.status(500).json({
       message: "Server Error",
-      serverMessage: err,
+      serverMessage: err.message,
     });
   }
 };
@@ -170,3 +190,19 @@ export const registerUser = async (req, res) => {
     });
   }
 };
+
+// // GET /auth/me - Get current user info from token
+// export const getMe = (req, res) => {
+//   try {
+//     const user = req.user; // req.user di-set oleh authMiddleware
+//     if (!user) {
+//       return res.status(401).json({ message: "User not authenticated" });
+//     }
+
+//     res.status(200).json({ user });
+//   } catch (err) {
+//     res
+//       .status(500)
+//       .json({ message: "Something went wrong", error: err.message });
+//   }
+// };
