@@ -1,9 +1,5 @@
 import bcrypt from "bcryptjs";
-import { 
-  getAll,
-  createUser,
-  updateUser,
- } from "../models/userModel.js"; 
+import { getAll, createUser, updateUser } from "../models/userModel.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -13,16 +9,23 @@ export const getAllUsers = async (req, res) => {
       data: rows,
     });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
+    res.status(500).json({
+      message: "Server Error",
       serverMessage: err,
     });
   }
 };
 
 export const createNewUser = async (req, res) => {
-  const { username, email, password, full_name } = req.body;
-  
+  const { username, email, password, full_name = username } = req.body;
+  console.log("📥 Request body:", req.body);
+
+  if (!username || !email || !password) {
+    return res.status(400).json({
+      message: "Bad Request: username, email, and password are required.",
+    });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const values = [username, email, hashedPassword, full_name];
@@ -30,12 +33,13 @@ export const createNewUser = async (req, res) => {
     await createUser(values);
 
     res.status(201).json({
-        message: 'CREATE new users success',
+      message: "CREATE new users success",
     });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
-      serverMessage: err,
+    console.error("❌ Error saat register:", err);
+    res.status(500).json({
+      message: "Server Error",
+      serverMessage: err.message,
     });
   }
 };
@@ -45,7 +49,7 @@ export const updateUserWithId = async (req, res) => {
   const { body } = req;
   const profile_picture = req.file.path;
 
-  try { 
+  try {
     await updateUser(body, profile_picture, id);
 
     res.json({
@@ -54,12 +58,12 @@ export const updateUserWithId = async (req, res) => {
         user_id: id,
         ...body,
         profile_picture: profile_picture,
-      }
-    })
+      },
+    });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
+    res.status(500).json({
+      message: "Server Error",
       serverMessage: err,
     });
   }
-}
+};
