@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { 
+import {
   getAll,
   createUser,
   updateUser,
   deleteUser,
   getUserByEmailAndPassword,
- } from "../models/userModel.js"; 
+} from "../models/userModel.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -23,7 +23,6 @@ export const getAllUsers = async (req, res) => {
     });
   }
 };
-
 
 export const createNewUser = async (req, res) => {
   const { username, email, password, full_name = username } = req.body;
@@ -77,17 +76,16 @@ export const updateUserWithId = async (req, res) => {
   }
 };
 
-
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const values = [email];
     const [rows] = await getUserByEmailAndPassword(values);
-  
+
     if (rows.length === 0) {
       return res.status(401).json({
-        message: 'Invalid email',
+        message: "Invalid email",
       });
     }
 
@@ -96,53 +94,79 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({
         message: "Invalid password",
       });
-    }  
+    }
 
-    const token = jwt.sign({
-      id: rows[0].id, 
-      email: rows[0].email
-    }, process.env.JWT_SECRET, {
-      expiresIn: '1h'
-    });
-  
+    const token = jwt.sign(
+      {
+        id: rows[0].id,
+        email: rows[0].email,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
     res.status(200).json({
-      message: 'Login Successfully',
+      message: "Login Successfully",
       token: token,
       user: {
         username: rows[0].username,
-      }
-    });  
+      },
+    });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
+    res.status(500).json({
+      message: "Server Error",
       serverMessage: err,
     });
   }
-}
+};
 
+// mengubah fungsi register untuk mendapatkan token dan bisa langsung auto login kalo tadi tidak dapet akses token
 export const registerUser = async (req, res) => {
   const { username, email, password, full_name } = req.body;
 
+  if (!username || !email || !password) {
+    return res.status(400).json({
+      message: "username, email, dan password wajib diisi",
+    });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const [cekUser] = await getUserByEmailAndPassword([email]);
-    if (cekUser.length > 0) {
+
+    const [rows] = await getUserByEmailAndPassword([email]);
+    if (rows.length > 0) {
       return res.status(400).json({
-        message: 'email is registered',
+        message: "Email sudah terdaftar",
       });
     }
 
-    const values = [username, email, hashedPassword, full_name];
-    await createUser(values);
+    // fungsi ketika user ketik fullname maka username akan default
+    const safeFullName = full_name || username;
+    const values = [username, email, hashedPassword, safeFullName];
+
+    const newUser = await createUser(values);
+
+    // Auto-login: buat token dan kirim user
+    const token = jwt.sign({ email }, process.env.JWT_SECRET || "rahasia", {
+      expiresIn: "1d",
+    });
 
     res.status(201).json({
-        message: 'CREATE new users success',
+      message: "CREATE new users success",
+      token,
+      user: {
+        username,
+        email,
+        full_name: safeFullName,
+      },
     });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
-      serverMessage: err,
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({
+      message: "Server Error",
+      serverMessage: err.message,
     });
   }
-}
+};

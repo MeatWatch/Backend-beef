@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import userRoutes from "./routes/userRoutes.js";
 import classificationRoutes from "./routes/classificationRoutes.js";
-import { authMiddleware } from "./middleware/userMiddleware.js";
+// import { authMiddleware } from "./middleware/userMiddleware.js";
 
 const app = express();
 
@@ -11,8 +11,7 @@ app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(authMiddleware);
-
+// app.use(authMiddleware); jangan memakai authmiddleware secara global pisahkan karena kalo make ini registrasi dan login nya gagal terus
 
 app.use("/users", userRoutes);
 app.use("/classifications", classificationRoutes);
