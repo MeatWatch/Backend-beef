@@ -17,8 +17,8 @@ export const getAllUsers = async (req, res) => {
       data: rows,
     });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
+    res.status(500).json({
+      message: "Server Error",
       serverMessage: err,
     });
   }
@@ -57,41 +57,26 @@ export const updateUserWithId = async (req, res) => {
   const { id } = req.params;
   const { body } = req;
   const profile_picture = req.file.path;
-  
-  try { 
+
+  try {
     await updateUser(body, profile_picture, id);
-    
+
     res.json({
       message: `UPDATE user with id_user ${id} success`,
       data: {
         user_id: id,
         ...body,
         profile_picture: profile_picture,
-      }
-    })
+      },
+    });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
+    res.status(500).json({
+      message: "Server Error",
       serverMessage: err,
     });
   }
-}
+};
 
-export const deleteUserById = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await deleteUser(id);
-    res.json({
-      message: `DELETE users with id_user: ${id} success`,
-    })
-  } catch (err) {
-    res.status(500).json({ 
-      message: 'Server Error',
-      serverMessage: err,
-    });
-  }
-}
 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;

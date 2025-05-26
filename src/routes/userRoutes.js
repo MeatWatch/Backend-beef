@@ -4,7 +4,6 @@ import {
     getAllUsers, 
     createNewUser, 
     updateUserWithId, 
-    deleteUserById, 
     loginUser,
     registerUser
 } from "../controllers/userController.js";
@@ -15,6 +14,5 @@ router.get("/", getAllUsers);
 router.post("/login", loginUser);
 router.post("/register", registerUser);
 router.patch("/:id", uploadProfilePicture.single('profile_picture'), updateUserWithId);
-router.delete("/:id", deleteUserById);
 
 export default router;
