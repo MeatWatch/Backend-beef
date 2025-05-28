@@ -29,21 +29,25 @@ export const uploadProfilePicture = multer({
 export const authMiddleware = (req, res, next) => {
   if (req.path === "/login" || req.path === "/register") return next();
 
-  const token = req.headers.authorization?.split("Bearer")[1];
-
-  if (token === undefined) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
-      message: "Unauthorized: Token not provided",
+      message: "Unauthorized: Token not provided or invalid format",
     });
   }
+
+  const token = authHeader.split(" ")[1].trim();
+  if (!token) return res.status(401).json({ message: "Token not provided" });
 
   try {
     const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verifyToken;
     next();
   } catch (err) {
-    res.status(401).json({
-      message: "Unauthorized: Invalid token",
-    });
+    let message = "Invalid token";
+    if (err.name === "TokenExpiredError") message = "Token expired";
+    if (err.name === "JsonWebTokenError") message = "Token malformed";
+    res.status(401).json({ message: `Unauthorized: ${message}` });
   }
 };

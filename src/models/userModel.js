@@ -1,38 +1,37 @@
 import dbPool from "../config/db.js";
 
 export const getAll = () => {
-  const query = `SELECT * FROM users`;
+  const query = `SELECT * FROM User`;
 
   return dbPool.execute(query);
 };
 
-export const getUserByEmailAndPassword = (values) => {
-  const query = `SELECT * FROM users WHERE email = ?`;
+export const getUserByEmail = (email) => {
+  const query = `SELECT * FROM User WHERE email = '${email}'`;
+
+  return dbPool.execute(query);
+};
+
+export const getUserByEmailOrUsername = async (values) => {
+  const query = `SELECT * FROM User WHERE email = ? OR username = ?`;
 
   return dbPool.execute(query, values);
 };
 
-// username dan email
-// username dan email
-export const getUserByEmailOrUsername = async (identifier) => {
-  if (!identifier) throw new Error("Identifier is undefined");
+export const getUserById = async (id) => {
+  const query = `SELECT * FROM User WHERE userId = ${id}`;
 
-  const [rows] = await dbPool.execute(
-    "SELECT * FROM users WHERE email = ? OR username = ?",
-    [identifier, identifier]
-  );
-
-  return rows[0]; // hanya return 1 user
-};
+  return dbPool.execute(query);
+}
 
 export const createUser = async (values) => {
-  const query = `INSERT INTO users (username, email, password_hash, full_name) VALUES (?, ?, ?, ?)`;
+  const query = `INSERT INTO User (email, no_telp, username, password) VALUES (?, ?, ?, ?)`;
 
   return dbPool.execute(query, values);
 };
 
-export const updateUser = (body, profile_picture, id) => {
-  const allowedField = ["username", "email"];
+export const updateUserWithPhoto = (body, profile_picture, id) => {
+  const allowedField = ['email', 'username', 'no_telp'];
 
   const field = [];
   const values = [];
@@ -40,7 +39,7 @@ export const updateUser = (body, profile_picture, id) => {
   for (const key of allowedField) {
     if (body[key]) {
       field.push(`${key} = ?`);
-      values.push(body.key);
+      values.push(body[key]);
     }
   }
 
@@ -53,13 +52,35 @@ export const updateUser = (body, profile_picture, id) => {
     throw new Error("Tidak ada data yang di update");
   }
 
-  const query = `UPDATE users set ${field.join(", ")} WHERE user_id=${id}`;
+  const query = `UPDATE User set ${field.join(", ")} WHERE userId = ${id}`;
+
+  return dbPool.execute(query, values);
+};
+
+export const updateUserWithoutPhoto = (body, id) => {
+  const allowedField = ['email', 'username', 'no_telp'];
+
+  const field = [];
+  const values = [];
+
+  for (const key of allowedField) {
+    if (body[key]) {
+      field.push(`${key} = ?`);
+      values.push(body[key]);
+    }
+  }
+
+  if (field.length === 0) {
+    throw new Error("Tidak ada data yang di update");
+  }
+
+  const query = `UPDATE User set ${field.join(", ")} WHERE userId = ${id}`;
 
   return dbPool.execute(query, values);
 };
 
 export const deleteUser = async (id) => {
-  const query = `DELETE FROM users WHERE user_id = ${id}`;
+  const query = `DELETE FROM User WHERE userId = ${id}`;
 
   return dbPool.execute(query);
 };

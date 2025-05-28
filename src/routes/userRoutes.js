@@ -9,23 +9,15 @@ import {
   updateUserWithId,
   loginUser,
   registerUser,
-  getMe,
+  getProfilById,
 } from "../controllers/userController.js";
 
 const router = express.Router();
 
 router.get("/", getAllUsers);
-
+router.get("/profil", authMiddleware, getProfilById);
 router.post("/login", loginUser);
 router.post("/register", registerUser);
-// router.get("/me", authMiddleware, getMe); // --> ini yang dibutuhkan FE
-
-// Patch dengan auth dan upload middleware
-router.patch(
-  "/:id",
-  authMiddleware, // tambahkan authmiddleware
-  uploadProfilePicture.single("profile_picture"),
-  updateUserWithId
-);
+router.patch("/", authMiddleware, uploadProfilePicture.single("profile_picture"), updateUserWithId);
 
 export default router;
