@@ -4,14 +4,15 @@ import dotenv from "dotenv";
 import {
   getAll,
   createUser,
-  deleteUser,
   getUserByEmail,
   getUserByEmailOrUsername,
   getUserById,
   updateUserWithoutPhoto,
-  updateUserWithPhoto,
+  updateUserWithPhoto, 
+  updateLastLogin,
 } from "../models/userModel.js";
 
+// GetAllUsers
 export const getAllUsers = async (req, res) => {
   try {
     const [rows] = await getAll();
@@ -27,6 +28,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+//createNewUser
 export const createNewUser = async (req, res) => {
   const { username, email, password, full_name = username } = req.body;
   console.log("📥 Request body:", req.body);
@@ -55,30 +57,38 @@ export const createNewUser = async (req, res) => {
   }
 };
 
+// fetch-api nya dengan login berhasil menggubah yg tadinya meminta email menjadi username dan email dengan mengubah identifier
 export const loginUser = async (req, res) => {
-  const { email, username, password } = req.body;
-  const values = [ email, username ];
+  const { identifier, password } = req.body;
 
-  if (!email && !username) {
-    return res.status(400).json({ 
-      message: "Email or Username is required"
-    });
-  }
+  console.log(`🔐 Login attempt with identifier:`, identifier);
 
   try {
-    const [rows] = await getUserByEmailOrUsername(values);
+    const [rows] = await getUserByEmailOrUsername([identifier, identifier]);
+    const user = rows[0];
 
-    if (rows.length === 0) {
-      return res.status(401).json({  
+    console.log("📥 DB response user:", user);
+
+    if (!user) {
+      console.warn("❌ User not found:", identifier);
+      return res.status(401).json({
         message: "Invalid username or email",
       });
     }
 
-    const user = rows[0];
+    console.log("🧑 Selected user:", user);
+    console.log("🔐 Hashed password from DB:", user.password);
+
+    if (!password || !user.password) {
+      console.warn("⚠️ Password tidak tersedia.");
+      return res.status(400).json({ message: "Missing credentials" });
+    }
 
     const isValid = await bcrypt.compare(password, user.password);
+    console.log("🔐 Password match status:", isValid);
 
     if (!isValid) {
+      console.warn("❌ Invalid password for user:", identifier);
       return res.status(401).json({
         message: "Invalid password",
       });
@@ -86,7 +96,8 @@ export const loginUser = async (req, res) => {
 
     const token = jwt.sign(
       {
-        userId: user.userId
+        userId: user.userId, // ✅ diperbaiki dari user.user.id
+        email: user.email,
       },
       process.env.JWT_SECRET,
       {
@@ -94,26 +105,31 @@ export const loginUser = async (req, res) => {
       }
     );
 
+    await updateLastLogin(user.userId);
     console.log("✅ JWT generated:", token);
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Login Successfully",
       token: token,
       user: {
-        userId: user.userId,
+        user_id: user.user_id,
         username: user.username,
         email: user.email,
-        no_telp: user.no_telp
+        full_name: user.full_name,
+        profile_picture: user.profile_picture,
       },
     });
   } catch (err) {
-    return res.status(500).json({
+    console.error("💥 Server error during login:", err);
+
+    res.status(500).json({
       message: "Server Error",
       serverMessage: err.message,
     });
   }
 };
 
+// registerUser
 export const registerUser = async (req, res) => {
   const { email, no_telp, username, password } = req.body;
 
@@ -133,13 +149,24 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    const values = [ email, no_telp, username, hashedPassword ];
-
+    const values = [email, no_telp ?? null, username, hashedPassword];
+    console.log("Register values:", values);
     await createUser(values);
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET || "rahasia", {
-      expiresIn: "1d",
-    });
+    // ✅ Ambil user lagi untuk mendapatkan ID-nya
+    const [newUserRows] = await getUserByEmail(email);
+    const newUser = newUserRows[0];
+
+    const token = jwt.sign(
+      {
+        userId: newUser.userId, // ✅ tambahkan id
+        email,
+      },
+      process.env.JWT_SECRET || "rahasia",
+      {
+        expiresIn: "1d",
+      }
+    );
 
     res.status(201).json({
       message: "CREATE new users success",
@@ -159,48 +186,55 @@ export const registerUser = async (req, res) => {
   }
 };
 
+//getProfilById
 export const getProfilById = async (req, res) => {
   const id = req.user.userId;
-  
+
   try {
     const [rows] = await getUserById(id);
 
     res.status(200).json({
       message: "Success get user by id",
       user: rows,
-    })
+    });
   } catch (err) {
     res.status(500).json({
       message: " Server Error",
       serverMessage: err,
-    })
+    });
   }
-}
+};
 
 export const updateUserWithId = async (req, res) => {
-  const id = req.user.userId;
-  const { body } = req;
-  const profile_picture = req.file?.path || null;
-
   try {
-    if (profile_picture) {
-      await updateUserWithPhoto(body, profile_picture, id);
+    console.log("💡 req.user:", req.user);
+    console.log("💡 req.body:", req.body);
+    console.log("💡 req.file:", req.file);
+    console.log("📨 Body dari frontend:", req.body);
+
+    const { userId } = req.user;
+    const data = {
+      ...req.body,
+      no_telp: req.body.no_telp ?? req.body.phone ?? null, // ⬅️ tambahkan ini
+    };
+
+    let updated;
+    if (req.file) {
+      updated = await updateUserWithPhoto(data, req.file.filename, userId);
     } else {
-      await updateUserWithoutPhoto(body, id);
+      updated = await updateUserWithoutPhoto(data, userId);
     }
 
+    if (!updated) {
+      return res.status(400).json({ success: false, message: "Update failed" });
+    }
 
+    const [userRows] = await getUserById(userId);
+    const user = userRows[0];
 
-    res.json({
-      message: `UPDATE user with id_user ${id} success`,
-      data: {
-        userId: id,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({
-      message: "Server Error",
-      serverMessage: err,
-    });
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error("🔥 ERROR UPDATE PROFILE:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

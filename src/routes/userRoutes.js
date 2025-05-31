@@ -5,19 +5,23 @@ import {
 } from "../middleware/userMiddleware.js";
 import {
   getAllUsers,
-  createNewUser,
+  getProfilById,
   updateUserWithId,
   loginUser,
   registerUser,
-  getProfilById,
 } from "../controllers/userController.js";
 
 const router = express.Router();
 
 router.get("/", getAllUsers);
-router.get("/profil", authMiddleware, getProfilById);
+router.get("/profile", authMiddleware, getProfilById);
 router.post("/login", loginUser);
 router.post("/register", registerUser);
-router.patch("/", authMiddleware, uploadProfilePicture.single("profile_picture"), updateUserWithId);
+router.patch(
+  "/profile",
+  authMiddleware,
+  uploadProfilePicture.single("profile_picture"),
+  updateUserWithId
+);
 
 export default router;
