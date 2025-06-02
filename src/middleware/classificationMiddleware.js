@@ -23,4 +23,4 @@ const filter = (req, file, cb) => {
 export const uploadBeefPicture = multer({
   storage,
   fileFilter: filter,
-}).single('beefPicture');
+});

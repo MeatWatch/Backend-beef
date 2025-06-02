@@ -27,7 +27,7 @@ const filter = (req, file, cb) => {
 export const uploadProfilePicture = multer({
   storage: storage,
   fileFilter: filter,
-}).single('profile_picture');
+});
 
 // cek token
 export const authMiddleware = (req, res, next) => {

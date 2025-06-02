@@ -20,7 +20,7 @@ router.post("/register", registerUser);
 router.patch(
   "/profile",
   authMiddleware,
-  uploadProfilePicture,
+  uploadProfilePicture.single('profile_picture'),
   updateUserWithUserId
 );
 

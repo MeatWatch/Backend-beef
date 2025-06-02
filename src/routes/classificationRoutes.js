@@ -7,6 +7,6 @@ const router = express.Router();
 
 router.get("/", authMiddleware, getAllClassification);
 router.get("/history", authMiddleware, getAllClassfyByUserId);
-router.post("/", authMiddleware, uploadBeefPicture, addClassification);
+router.post("/", authMiddleware, uploadBeefPicture.single('image_beef'), addClassification);
 
 export default router;
