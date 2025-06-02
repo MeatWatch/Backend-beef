@@ -1,16 +1,23 @@
+import { nanoid } from 'nanoid';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import {
   getAll,
-  createUser,
   getUserByEmail,
   getUserByEmailOrUsername,
   getUserById,
-  updateUserWithoutPhoto,
-  updateUserWithPhoto, 
+  createUser,
+  updateWithUserId,
   updateLastLogin,
 } from "../models/userModel.js";
+
+dotenv.config();
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // GetAllUsers
 export const getAllUsers = async (req, res) => {
@@ -28,76 +35,65 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-//createNewUser
-export const createNewUser = async (req, res) => {
-  const { username, email, password, full_name = username } = req.body;
-  console.log("📥 Request body:", req.body);
-
-  if (!username || !email || !password) {
-    return res.status(400).json({
-      message: "Bad Request: username, email, and password are required.",
-    });
-  }
+//getProfilById
+export const getProfilById = async (req, res) => {
+  const { userId } = req.user;
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const values = [username, email, hashedPassword, full_name];
+    const [rows] = await getUserById(userId);
 
-    await createUser(values);
-
-    res.status(201).json({
-      message: "CREATE new users success",
+    res.status(200).json({
+      success: true,
+      message: "Success get user by id",
+      user: rows[0],
     });
   } catch (err) {
-    console.error("❌ Error saat register:", err);
     res.status(500).json({
-      message: "Server Error",
-      serverMessage: err.message,
+      success: false,
+      message: " Server Error",
+      serverMessage: err,
     });
   }
 };
 
-// fetch-api nya dengan login berhasil menggubah yg tadinya meminta email menjadi username dan email dengan mengubah identifier
+// Login User
 export const loginUser = async (req, res) => {
   const { identifier, password } = req.body;
-
-  console.log(`🔐 Login attempt with identifier:`, identifier);
 
   try {
     const [rows] = await getUserByEmailOrUsername([identifier, identifier]);
     const user = rows[0];
 
-    console.log("📥 DB response user:", user);
-
     if (!user) {
-      console.warn("❌ User not found:", identifier);
-      return res.status(401).json({
+      return res.status(400).json({
         message: "Invalid username or email",
       });
     }
 
-    console.log("🧑 Selected user:", user);
-    console.log("🔐 Hashed password from DB:", user.password);
-
     if (!password || !user.password) {
-      console.warn("⚠️ Password tidak tersedia.");
       return res.status(400).json({ message: "Missing credentials" });
     }
 
     const isValid = await bcrypt.compare(password, user.password);
-    console.log("🔐 Password match status:", isValid);
 
     if (!isValid) {
-      console.warn("❌ Invalid password for user:", identifier);
-      return res.status(401).json({
+      return res.status(400).json({
         message: "Invalid password",
       });
     }
 
     const token = jwt.sign(
       {
-        userId: user.userId, // ✅ diperbaiki dari user.user.id
+        userId: user.userId,
         email: user.email,
+        no_telp: user.no_telp,
+        username: user.username,
+        password: user.password,
+        profile_picture: user.profile_picture,
+        address: user.address,
+        created_at: user.created_at, 
+        updated_at: user.updated_at,
+        last_login: user.last_login,
       },
       process.env.JWT_SECRET,
       {
@@ -109,20 +105,25 @@ export const loginUser = async (req, res) => {
     console.log("✅ JWT generated:", token);
 
     res.status(200).json({
+      success: true,
       message: "Login Successfully",
       token: token,
       user: {
-        user_id: user.user_id,
-        username: user.username,
+        userId: user.userId,
         email: user.email,
-        full_name: user.full_name,
+        no_telp: user.no_telp,
+        username: user.username,
         profile_picture: user.profile_picture,
-      },
+        address: user.address,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        last_login: user.last_login,
+      }
     });
   } catch (err) {
-    console.error("💥 Server error during login:", err);
-
+    console.error("🔥 Register error:", err);
     res.status(500).json({
+      success: false,
       message: "Server Error",
       serverMessage: err.message,
     });
@@ -131,35 +132,37 @@ export const loginUser = async (req, res) => {
 
 // registerUser
 export const registerUser = async (req, res) => {
-  const { email, no_telp, username, password } = req.body;
+  const { email, username, password } = req.body;
 
   if (!username || !email || !password) {
     return res.status(400).json({
-      message: "username, email, dan password wajib diisi",
+      success: false,
+      message: "Username, email and password are required",
     });
   }
 
+  
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
+    
     const [rows] = await getUserByEmail(email);
     if (rows.length > 0) {
-      res.status(400).json({
-        message: "Email sudah terdaftar",
+      return res.status(400).json({
+        success: false,
+        message: "Email has been registered",
       });
     }
+    const userId = nanoid(10);
 
-    const values = [email, no_telp ?? null, username, hashedPassword];
-    console.log("Register values:", values);
+    const values = [userId, email, username, hashedPassword];
     await createUser(values);
 
-    // ✅ Ambil user lagi untuk mendapatkan ID-nya
     const [newUserRows] = await getUserByEmail(email);
     const newUser = newUserRows[0];
 
     const token = jwt.sign(
       {
-        userId: newUser.userId, // ✅ tambahkan id
+        userId: newUser.userId,
         email,
       },
       process.env.JWT_SECRET || "rahasia",
@@ -169,72 +172,80 @@ export const registerUser = async (req, res) => {
     );
 
     res.status(201).json({
+      success: true,
       message: "CREATE new users success",
       token,
       user: {
         name: username,
         email: email,
-        no_telp: no_telp,
       },
     });
   } catch (err) {
-    console.error("REGISTER ERROR:", err);
     res.status(500).json({
+      success: false,
       message: "Server Error",
       serverMessage: err.message,
     });
   }
 };
 
-//getProfilById
-export const getProfilById = async (req, res) => {
-  const id = req.user.userId;
 
+// update user
+export const updateUserWithUserId = async (req, res) => {
+  const { userId, password } = req.user;
+  const { email, no_telp, username, address, remove_avatar } = req.body;
+  const now = dayjs().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
+  const updated_at = now;
+  
   try {
-    const [rows] = await getUserById(id);
+    const [rows] = await getUserById(userId);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    
+    const user = rows[0];
+    const created_at = dayjs(user.created_at).format('YYYY-MM-DD HH:mm:ss');
+    const last_login = dayjs(user.last_login).format('YYYY-MM-DD HH:mm:ss');
 
-    res.status(200).json({
-      message: "Success get user by id",
-      user: rows,
-    });
-  } catch (err) {
-    res.status(500).json({
-      message: " Server Error",
-      serverMessage: err,
-    });
-  }
-};
+    let profile_picture = user.profile_picture;
 
-export const updateUserWithId = async (req, res) => {
-  try {
-    console.log("💡 req.user:", req.user);
-    console.log("💡 req.body:", req.body);
-    console.log("💡 req.file:", req.file);
-    console.log("📨 Body dari frontend:", req.body);
-
-    const { userId } = req.user;
-    const data = {
-      ...req.body,
-      no_telp: req.body.no_telp ?? req.body.phone ?? null, // ⬅️ tambahkan ini
-    };
-
-    let updated;
     if (req.file) {
-      updated = await updateUserWithPhoto(data, req.file.filename, userId);
-    } else {
-      updated = await updateUserWithoutPhoto(data, userId);
+      profile_picture = req.file.filename;
     }
 
-    if (!updated) {
-      return res.status(400).json({ success: false, message: "Update failed" });
+    if (remove_avatar === "true") {
+      profile_picture = null;
     }
 
-    const [userRows] = await getUserById(userId);
-    const user = userRows[0];
+    const values = [
+      email ?? user.email,
+      no_telp ?? user.no_telp,
+      username ?? user.username,
+      password,
+      profile_picture,
+      address ?? user.address,
+      created_at,
+      updated_at,
+      last_login,
+      userId
+    ];
 
-    res.json({ success: true, user });
+    await updateWithUserId(values);
+
+    const [updatedRows] = await getUserById(userId);
+    const updatedUser = updatedRows[0];
+
+    return res.status(200).json({
+      success: true,
+      message: 'Update Success',
+      user: updatedUser,
+    });
+
   } catch (error) {
-    console.error("🔥 ERROR UPDATE PROFILE:", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("❌ PATCH Error:", error.message);
+    return res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };

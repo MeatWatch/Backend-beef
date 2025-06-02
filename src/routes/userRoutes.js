@@ -6,7 +6,7 @@ import {
 import {
   getAllUsers,
   getProfilById,
-  updateUserWithId,
+  updateUserWithUserId,
   loginUser,
   registerUser,
 } from "../controllers/userController.js";
@@ -20,8 +20,8 @@ router.post("/register", registerUser);
 router.patch(
   "/profile",
   authMiddleware,
-  uploadProfilePicture.single("profile_picture"),
-  updateUserWithId
+  uploadProfilePicture,
+  updateUserWithUserId
 );
 
 export default router;

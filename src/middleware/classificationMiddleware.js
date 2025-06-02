@@ -1,25 +1,26 @@
 import multer  from "multer";
 
+// inisialisasi storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'images/classification/');
+        cb(null, 'images/classification/'); // Tempat penyimpanan image classification
     },
     filename: (req, file, cb) => {
         cb(null, new Date().getTime()+'-'+file.originalname);
     },
 })
 
+// peizinan (hanya izinkan image)
 const filter = (req, file, cb) => {
-    const allowedType = ['image/jpg', 'image/jpeg', 'image/png'];
-
-    if (allowedType.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only JPG, JPEG and png files are allowed'), false);
-    }
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
 };
 
-export const uploadBeefPicture = (multer({
-    storage: storage,
-    fileFilter: filter,
-}))
+// inisialisasi middleware multer
+export const uploadBeefPicture = multer({
+  storage,
+  fileFilter: filter,
+}).single('beefPicture');

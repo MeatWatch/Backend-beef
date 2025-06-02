@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import classificationRoutes from "./routes/classificationRoutes.js";
 import { reminderJob } from "./middleware/reminderMiddleware.js";
 
+dotenv.config();
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +24,10 @@ app.use("/classifications", classificationRoutes);
 app.use(
   "/images/users",
   express.static(path.join(__dirname, "../images/users"))
+);
+app.use(
+  "/images/classification",
+  express.static(path.join(__dirname, "../images/classification"))
 );
 
 const PORT = process.env.PORT || 3000;
