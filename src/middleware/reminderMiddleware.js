@@ -32,28 +32,29 @@ export const createReminderDate = async (id) => {
     let reminderDate;
     
     const meat = rows[0];
+    console.log(typeof meat.confidence, meat.confidence);
     const freshness = (meat.status ?? '').trim().toLowerCase();
     const score = meat.confidence;
 
     // logika reminder
     if (freshness === 'segar') {
-        if (score >= 90) {
+        if (score >= 0.9) {
             reminderDate = createdAt.add(7, 'day');
-        } else if (score >= 70) {
+        } else if (score >= 0.7) {
             reminderDate = createdAt.add(5, 'day');
-        } else if (score >= 50) {
+        } else if (score >= 0.5) {
             reminderDate = createdAt.add(3, 'day');
-        } else if (score < 50) {
+        } else if (score < 0.5) {
             reminderDate = createdAt.add(2, 'day');
         }
     } else if (freshness === 'tidak segar') {
-        if (score >= 90) {
+        if (score >= 0.9) {
             reminderDate = createdAt.add(1, 'day');
-        } else if (score >= 70) {
+        } else if (score >= 0.7) {
             reminderDate = createdAt.add(2, 'day');
-        } else if (score >= 50) {
+        } else if (score >= 0.5) {
             reminderDate = createdAt.add(4, 'day');
-        } else if (score < 50) {
+        } else if (score < 0.5) {
             reminderDate = createdAt.add(5, 'day');
         }
     } else {
@@ -73,9 +74,9 @@ export const reminderJob = cron.schedule('* * * * *', async () => {
             const createdAtWIB = dayjs.utc(data.createdAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
 
             const mailOptions = {
-                from: 'MEATWATCH',
+                from: `MeatWatch <noreply@meatwatch.com>`,
                 to: data.email,
-                subject: "⚠️ Daging Anda Perlu Segera Digunakan!",
+                subject: `⚠️ Daging Anda Perlu Segera Digunakan!`,
                 html: `
                   <p style="text-transform: uppercase;"><b>hallo, ${data.username}</b></p>
                   <p>Kami ingin mengingatkan bahwa berdasarkan hasil klasifikasi terakhir dari aplikasi <em>MeatWatch</em>, daging yang Anda unggah terdeteksi dalam kondisi <strong>tidak segar</strong>.</p>

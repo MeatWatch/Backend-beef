@@ -60,10 +60,13 @@ export const addClassification = async (req, res) => {
       message: "Image not found in request" 
     });
   }
-
+  
   const image_beef = req.file.path;
   const { meat_type, status, confidence } = req.body;
-
+  
+  dayjs.extend(utc);
+  dayjs.extend(timezone);
+  const createdAt = dayjs().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
   const classifyId = nanoid(10);
   const reminderId = nanoid(10);
 
@@ -75,6 +78,7 @@ export const addClassification = async (req, res) => {
       status,
       confidence,
       image_beef,
+      createdAt
     ];
 
     
@@ -97,9 +101,6 @@ export const addClassification = async (req, res) => {
       });
     }
 
-    dayjs.extend(utc);
-    dayjs.extend(timezone);
-    const createdAt = dayjs().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
     const reminderDate = await createReminderDate(classifyId);
 
     const values_reminder = [reminderId, classifyId, createdAt, reminderDate];

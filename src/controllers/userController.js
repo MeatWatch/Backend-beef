@@ -157,24 +157,9 @@ export const registerUser = async (req, res) => {
     const values = [userId, email, username, hashedPassword];
     await createUser(values);
 
-    const [newUserRows] = await getUserByEmail(email);
-    const newUser = newUserRows[0];
-
-    const token = jwt.sign(
-      {
-        userId: newUser.userId,
-        email,
-      },
-      process.env.JWT_SECRET || "rahasia",
-      {
-        expiresIn: "1d",
-      }
-    );
-
     res.status(201).json({
       success: true,
       message: "CREATE new users success",
-      token,
       user: {
         name: username,
         email: email,

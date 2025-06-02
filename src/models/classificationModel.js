@@ -9,7 +9,10 @@ export const getAllClassify = () => {
 
 // Get all classification by userId
 export const getAllByUserId = (id) => {
-    const query = `SELECT * FROM Classification WHERE userId = ?`;
+    const query = `SELECT Classification.*, Reminder.reminderDate 
+    FROM Classification, Reminder
+    WHERE Classification.classifyId = Reminder.classifyId
+    AND userId = ?`;
 
     return dbPool.execute(query, [id]);
 }
@@ -23,7 +26,7 @@ export const getClassifyByClassifyId = (id) => {
 
 // add classification to database
 export const createNewClassification = async(values) => {
-    const query = `INSERT INTO Classification (classifyId, userId, meat_type, status, confidence, image_beef) VALUES (?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO Classification (classifyId, userId, meat_type, status, confidence, image_beef, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
     return dbPool.execute(query, values);
 }
