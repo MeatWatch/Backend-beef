@@ -93,13 +93,14 @@ export const addClassification = async (req, res) => {
     await createNewClassification(values_classify);
 
     const [rows] = await getClassifyByClassifyId(classifyId);
-
+    
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Classification not found" 
       });
     }
+    const result = rows[0];
 
     const reminderDate = await createReminderDate(classifyId);
 
@@ -108,7 +109,8 @@ export const addClassification = async (req, res) => {
 
     return res.status(201).json({
       success: true, 
-      message: "POST Success" 
+      message: "POST Success",
+      result
     });
   } catch (err) {
     console.error("❌ Error saving classification:", err);

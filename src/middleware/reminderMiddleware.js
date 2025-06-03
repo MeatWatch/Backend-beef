@@ -32,7 +32,6 @@ export const createReminderDate = async (id) => {
     let reminderDate;
     
     const meat = rows[0];
-    console.log(typeof meat.confidence, meat.confidence);
     const freshness = (meat.status ?? '').trim().toLowerCase();
     const score = meat.confidence;
 
