@@ -4,7 +4,8 @@ ___
 MeatWatch API adalah layanan backend yang mendukung manajemen autentikasi pengguna melalui fitur login dan registrasi, penyimpanan data hasil klasifikasi pengguna ke dalam database secara efisien, serta pengiriman pengingat atau reminder otomatis melalui email. API ini dirancang untuk memberikan pengalaman yang aman, responsif, dan terintegrasi dengan teknologi pembelajaran mesin untuk klasifikasi produk daging.  
 **Versi: 1.0.0.**
 ### 🌐 Base URL :
-- REST API: `https://backend-meatwatch-production.up.railway.app`
+- **REST API :** `https://backend-meatwatch-production.up.railway.app`
+- **Machine Learning API :** `https://meatwatchmodel-production.up.railway.app`
 ### 🔒 Metode Autentikasi
 - **Token-Based Authentication**
 ___
@@ -282,7 +283,7 @@ ___
 | `confidence`  | string    | Tingkat kepercayaan klasifikasi |
 | `image_beef`  | file      | Foto daging yang di upload      |
 
-> **Catatan :** Informasi mengenai tingkat kesegaran dan tingkat kepercayaan diperoleh dari hasil prediksi model machine learning
+> **Catatan :** Informasi mengenai tingkat kesegaran dan tingkat kepercayaan diperoleh dari hasil prediksi model machine learning 
 - **✅ Response :**
 ``` json
 {
@@ -300,15 +301,3 @@ ___
 }
 ```
 ___
-
-
-
-
-
-
-
-
-
-
-
-
