@@ -283,7 +283,7 @@ ___
 | `confidence`  | string    | Tingkat kepercayaan klasifikasi |
 | `image_beef`  | file      | Foto daging yang di upload      |
 
-> **Catatan :** Informasi mengenai tingkat kesegaran dan tingkat kepercayaan diperoleh dari hasil prediksi model machine learning 
+> ⚠️ **Catatan :** Informasi mengenai tingkat kesegaran dan tingkat kepercayaan diperoleh dari hasil prediksi model machine learning 
 - **✅ Response :**
 ``` json
 {
